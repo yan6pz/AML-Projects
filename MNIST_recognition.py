@@ -177,11 +177,14 @@ nb_normal = NaiveBayesNormalDistr(1e-1)
 nb_normal.train(images, labels)
 _ = nb_normal.predict(test_images)
 print("Naive Bayes - normal distribution accuracy on untouched data: ", nb_normal.get_accuracy(test_labels))
+# to plot the digits mean for all 10 digits.
+nb_normal.plot_all_digits_mean()
+
 # use Naive Bayes Normal D to train and predict on stretched images:
 nb_normal_stretched = NaiveBayesNormalDistr(1e-1)
 nb_normal_stretched.train(stretched_image, labels)
 _ = nb_normal_stretched.predict(stretched_test_image)
-print("Naive Bayes - normal distribution accuracy on untouched data: ", nb_normal_stretched.get_accuracy(test_labels))
+print("Naive Bayes - normal distribution accuracy on stretched data: ", nb_normal_stretched.get_accuracy(test_labels))
 
 # use Naive Bayes Bernoulli to train and predict on untouched images:
 nb_bernoulli = NaiveBayesBernoulli()
@@ -206,36 +209,19 @@ print("Untouched data - Random Forest (30 Trees, 16 Depth)", train_and_validate_
 
 # RANDOM FOREST - STRETCHED DATA
 # use Random forest with setting of trees = 10 and depth = 4
-print("Untouched data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 4))
+print("Stretched data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 4))
 # use Random forest with setting of trees = 10 and depth = 16
-print("Untouched data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 16))
+print("Stretched data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 16))
 # use Random forest with setting of trees = 30 and depth = 4
-print("Untouched data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 4))
+print("Stretched data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 4))
 # use Random forest with setting of trees = 30 and depth = 16
-print("Untouched data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 16))
+print("Stretched data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 16))
 
 '''
+The following is for verification & debug purpose
 one_digit = images[39009].reshape(28, 28)
 label = labels[39009]
 plt.title('Label is {label}'.format(label=label))
 plt.imshow(one_digit, cmap='gray')
 plt.show()
-
-data = np.array(data)
-split_idx = int(data.shape[0]*0.2)
-
-total_accuracy = 0.0
-total_iteration = 10
-for i in range(total_iteration):
-    np.random.shuffle(data)
-    test_set = data[:split_idx, :]
-    train_set = data[split_idx:, :]
-    total_accuracy = total_accuracy + train_and_predict(train_set, test_set)
-    print("train accuracy "+str(i)+" is ", str(train_and_predict(train_set, train_set)))
-    print("test accuracy " + str(i) + " is ", str(train_and_predict(train_set, test_set)))
-
-average_accuracy = total_accuracy/total_iteration
-print("accuracy is : ", average_accuracy)
-#print("shape of train set is: ", train_set.shape)
-#print("shape of test set is: ", test_set.shape)
 '''
