@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Jan 19 19:52:59 2019
 
-@author: Yanis
-"""
 
 import numpy as np
 import math
 import pandas as pd
 
 
-#Generic enogh to work for multiclass datasets
+#Generic enough to work for multiclass datasets
 def NaiveBayes(dataset, n):
     accuracies = []
     for i in range(n):
@@ -45,12 +41,11 @@ def group_mean_std_tuples(dataset):
     del mean_std_tuples[-1] #remove the last label column summaries
     return mean_std_tuples
 
-def mean(numbers):
-    return sum(numbers) / float(len(numbers))
+def mean(records):
+    return sum(records) / float(len(records))
 
-
-def standard_deviation(average, numbers):
-    variance = sum([pow(x - average, 2) for x in numbers]) / float(len(numbers) - 1)
+def standard_deviation(average, records):
+    variance = sum([pow(x - average, 2) for x in records]) / float(len(records) - 1)
     return math.sqrt(variance)
 
 # choose y with largest sum(log(p(Xi|y))) + log(p(y)) 
