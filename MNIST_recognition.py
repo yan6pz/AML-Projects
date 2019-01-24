@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Simple Demo of a 1-feature Naive Bayes.
+"""Apply Naive Bayes (Gaussian & Bernoulli) and Random Forest on MNIST digits Classification
 
 """
 
@@ -11,7 +11,9 @@ from sklearn.ensemble import RandomForestClassifier
 from mnist import MNIST
 import cv2
 
-
+####################################################
+#           Stretch images to 400 (20x20)          #
+####################################################
 def stretch_bounding_box(single_image_data):
     single_image_data = single_image_data.reshape((28, 28))
     vertical_min = np.nonzero(single_image_data)[0].min()
@@ -21,6 +23,9 @@ def stretch_bounding_box(single_image_data):
     return cv2.resize(single_image_data[vertical_min: vertical_max+1, horizon_min:horizon_max+1], (20, 20)).reshape(400)
 
 
+####################################################
+#          The Gaussian NB Classifier              #
+####################################################
 class NaiveBayesNormalDistr:
     def __init__(self, epsilon=1e-9):
         self.epsilon = epsilon
@@ -90,6 +95,10 @@ class NaiveBayesNormalDistr:
         else:
             print("Train your model with data first.")
 
+
+####################################################
+#          The Bernoulli NB Classifier             #
+####################################################
 class NaiveBayesBernoulli:
     def __init__(self):
         self.predicted = []
@@ -140,12 +149,16 @@ class NaiveBayesBernoulli:
         return accuracy
 
 
+####################################################
+#          The RandomForest Classifier             #
+####################################################
 def train_and_validate_randomforest(train_data, train_labels, test_data, test_label, n_trees, depth):
     clf = RandomForestClassifier(n_estimators=n_trees, max_depth=depth)
     clf.fit(train_data, train_labels)
     predicted = clf.predict(test_data)
     accuracy = sum(predicted == test_label)/test_label.shape[0]
     return accuracy
+
 
 mndata = MNIST('./MNIST')
 mndata.gz = True
@@ -172,56 +185,99 @@ stretched_image = np.array(list(stretched_image_map))
 stretched_test_image_map = map(stretch_bounding_box, test_images)
 stretched_test_image = np.array(list(stretched_test_image_map))
 
-# use Naive Bayes Normal D to train and predict on untouched images:
+
+####################################################
+#    The following predict over TEST data          #
+####################################################
+# use Naive Bayes Normal D to train and predict on untouched test images:
 nb_normal = NaiveBayesNormalDistr(1e-1)
 nb_normal.train(images, labels)
 _ = nb_normal.predict(test_images)
-print("Naive Bayes - normal distribution accuracy on untouched data: ", nb_normal.get_accuracy(test_labels))
+print("Naive Bayes - normal distribution accuracy on untouched test data: ", nb_normal.get_accuracy(test_labels))
 # to plot the digits mean for all 10 digits.
 nb_normal.plot_all_digits_mean()
 
-# use Naive Bayes Normal D to train and predict on stretched images:
+# use Naive Bayes Normal D to train and predict on stretched test images:
 nb_normal_stretched = NaiveBayesNormalDistr(1e-1)
 nb_normal_stretched.train(stretched_image, labels)
 _ = nb_normal_stretched.predict(stretched_test_image)
-print("Naive Bayes - normal distribution accuracy on stretched data: ", nb_normal_stretched.get_accuracy(test_labels))
+print("Naive Bayes - normal distribution accuracy on stretched test data: ", nb_normal_stretched.get_accuracy(test_labels))
 
-# use Naive Bayes Bernoulli to train and predict on untouched images:
+# use Naive Bayes Bernoulli to train and predict on untouched test images:
 nb_bernoulli = NaiveBayesBernoulli()
 nb_bernoulli.train(images, labels)
 _ = nb_bernoulli.predict(test_images)
-print("Naive Bayes - bernoulli accuracy on untouched data: ", nb_bernoulli.get_accuracy(test_labels))
-# use Naive Bayes Bernoulli to train and predict on stretched images:
+print("Naive Bayes - bernoulli accuracy on untouched test data: ", nb_bernoulli.get_accuracy(test_labels))
+# use Naive Bayes Bernoulli to train and predict on stretched test images:
 nb_bernoulli_stretched = NaiveBayesBernoulli()
 nb_bernoulli_stretched.train(stretched_image, labels)
 _ = nb_bernoulli_stretched.predict(stretched_test_image)
-print("Naive Bayes - bernoulli accuracy on stretched data: ", nb_bernoulli_stretched.get_accuracy(test_labels))
+print("Naive Bayes - bernoulli accuracy on stretched test data: ", nb_bernoulli_stretched.get_accuracy(test_labels))
 
-# RANDOM FOREST - UNTOUCHED DATA
+# RANDOM FOREST - UNTOUCHED TEST DATA
 # use Random forest with setting of trees = 10 and depth = 4
-print("Untouched data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 10, 4))
+print("Untouched test data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 10, 4))
 # use Random forest with setting of trees = 10 and depth = 16
-print("Untouched data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 10, 16))
+print("Untouched test data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 10, 16))
 # use Random forest with setting of trees = 30 and depth = 4
-print("Untouched data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 30, 4))
+print("Untouched test data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 30, 4))
 # use Random forest with setting of trees = 30 and depth = 16
-print("Untouched data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 30, 16))
+print("Untouched test data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(images, labels, test_images, test_labels, 30, 16))
 
-# RANDOM FOREST - STRETCHED DATA
+# RANDOM FOREST - STRETCHED TEST DATA
 # use Random forest with setting of trees = 10 and depth = 4
-print("Stretched data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 4))
+print("Stretched test data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 4))
 # use Random forest with setting of trees = 10 and depth = 16
-print("Stretched data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 16))
+print("Stretched test data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 10, 16))
 # use Random forest with setting of trees = 30 and depth = 4
-print("Stretched data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 4))
+print("Stretched test data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 4))
 # use Random forest with setting of trees = 30 and depth = 16
-print("Stretched data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 16))
+print("Stretched test data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_test_image, test_labels, 30, 16))
 
-'''
-The following is for verification & debug purpose
-one_digit = images[39009].reshape(28, 28)
-label = labels[39009]
-plt.title('Label is {label}'.format(label=label))
-plt.imshow(one_digit, cmap='gray')
-plt.show()
-'''
+####################################################
+#    The following predict over TRAIN data         #
+####################################################
+# use Naive Bayes Normal D to train and predict on untouched test images:
+nb_normal = NaiveBayesNormalDistr(1e-1)
+nb_normal.train(images, labels)
+_ = nb_normal.predict(images)
+print("Naive Bayes - normal distribution accuracy on untouched training data: ", nb_normal.get_accuracy(labels))
+# to plot the digits mean for all 10 digits.
+nb_normal.plot_all_digits_mean()
+
+# use Naive Bayes Normal D to train and predict on stretched test images:
+nb_normal_stretched = NaiveBayesNormalDistr(1e-1)
+nb_normal_stretched.train(stretched_image, labels)
+_ = nb_normal_stretched.predict(stretched_image)
+print("Naive Bayes - normal distribution accuracy on stretched training data: ", nb_normal_stretched.get_accuracy(labels))
+
+# use Naive Bayes Bernoulli to train and predict on untouched test images:
+nb_bernoulli = NaiveBayesBernoulli()
+nb_bernoulli.train(images, labels)
+_ = nb_bernoulli.predict(images)
+print("Naive Bayes - bernoulli accuracy on untouched training data: ", nb_bernoulli.get_accuracy(labels))
+# use Naive Bayes Bernoulli to train and predict on stretched test images:
+nb_bernoulli_stretched = NaiveBayesBernoulli()
+nb_bernoulli_stretched.train(stretched_image, labels)
+_ = nb_bernoulli_stretched.predict(stretched_image)
+print("Naive Bayes - bernoulli accuracy on stretched training data: ", nb_bernoulli_stretched.get_accuracy(labels))
+
+# RANDOM FOREST - UNTOUCHED TRAIN DATA
+# use Random forest with setting of trees = 10 and depth = 4
+print("Untouched Training data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(images, labels, images, labels, 10, 4))
+# use Random forest with setting of trees = 10 and depth = 16
+print("Untouched Training data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(images, labels, images, labels, 10, 16))
+# use Random forest with setting of trees = 30 and depth = 4
+print("Untouched Training data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(images, labels, images, labels, 30, 4))
+# use Random forest with setting of trees = 30 and depth = 16
+print("Untouched Training data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(images, labels, images, labels, 30, 16))
+
+# RANDOM FOREST - STRETCHED TRAIN DATA
+# use Random forest with setting of trees = 10 and depth = 4
+print("Stretched Training data - Random Forest (10 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_image, labels, 10, 4))
+# use Random forest with setting of trees = 10 and depth = 16
+print("Stretched Training data - Random Forest (10 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_image, labels, 10, 16))
+# use Random forest with setting of trees = 30 and depth = 4
+print("Stretched Training data - Random Forest (30 Trees, 4 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_image, labels, 30, 4))
+# use Random forest with setting of trees = 30 and depth = 16
+print("Stretched Training data - Random Forest (30 Trees, 16 Depth)", train_and_validate_randomforest(stretched_image, labels, stretched_image, labels, 30, 16))
