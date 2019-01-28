@@ -55,13 +55,17 @@ def normalize_vector(x):
     return math.sqrt(sum(x**2))
 
 
-def plot_images(vector, l, ylabel, ylim):
-    plt.plot(vector,'r')
-    plt.title("Lambda = {}".format(l))
+def plot_images(vectors, title, ylabel, ylim, loc):
+    plt.title(title)
     plt.xlabel("Epoch")
     plt.ylabel(ylabel)
     plt.ylim(ylim)
     plt.xlim([0, 50])
+
+    for vector in vectors:
+        plt.plot(vector)
+
+    plt.legend(['l = 1e-3', 'l = 1e-2', 'l = 1e-1', 'l = 1'], loc = loc)
     plt.show()
 
 
@@ -73,7 +77,7 @@ def train(l, epochs, steps):
 
     for epoch in range(epochs):
         # Select 50 examples for each epoch
-        index= np.random.randint(len(train_X), size=50)
+        index = np.random.randint(len(train_X), size=50)
         accuracy_data = train_X[index]
         accuracy_labels = train_Y[index]
         train_data = train_X[-index]
@@ -82,7 +86,7 @@ def train(l, epochs, steps):
         for step in range(steps):
             row_index = np.random.randint(len(train_labels), size=1)
             feature_x = train_data[row_index]
-            yi= np.asmatrix(train_labels[row_index])
+            yi = np.asmatrix(train_labels[row_index])
       
             # Estimate gamma and update the parameters
             matrix_a, b = gradient_descent(feature_x, yi, matrix_a, b, l, epoch, stochastic_step_len, stochastic_step_size)
@@ -91,15 +95,12 @@ def train(l, epochs, steps):
             if step % 30 == 0:
                 accuracy_val = accuracy(accuracy_data, accuracy_labels, matrix_a, b)
                 accuracy_vector.append(accuracy_val)
-                magnitude=normalize_vector(matrix_a)
+                magnitude = normalize_vector(matrix_a)
                 magnitude_vector.append(magnitude)
-
-    plot_images(accuracy_vector, l, 'Penalty error', [0, 1])
-    plot_images(magnitude_vector, l, 'Magnitude', [0, 3])
     
     val_acc = accuracy(validate_X, validate_Y, matrix_a, b)
         
-    return val_acc, matrix_a, b
+    return val_acc, matrix_a, b, accuracy_vector, magnitude_vector
 
 
 def predict(x, n_len, A, b):
@@ -137,10 +138,10 @@ names = [
 
 def train_test_validate_split(features, labels):
     #split 90:10 training:validation
-    train_x, validation_x, train_y, validatation_y = train_test_split(features, labels, test_size=0.1,
+    train_x, validation_x, train_y, validation_y = train_test_split(features, labels, test_size=0.1,
                                                                   random_state=12)
     
-    return train_x, train_y,  validation_x, validatation_y
+    return train_x, train_y,  validation_x, validation_y
 
 
 def encode_labels(labels_y):
@@ -168,7 +169,7 @@ def decode_labels(labels_y):
 def process_training_data():
     train_data = pd.read_csv('train.csv', names=names, na_values=" ?")
 
-    train_data = train_data.iloc[:, [0,2,4,10,11,12,14]]
+    train_data = train_data.iloc[:, [0, 2, 4, 10, 11, 12, 14]]
 
     data = train_data.dropna()
     data_X = data.iloc[:, 0:6]
@@ -177,7 +178,7 @@ def process_training_data():
     X_scaled = preprocessing.scale(data_clean_X)
     encoded_Y = encode_labels(data_clean_Y)
 
-    return X_scaled,encoded_Y
+    return X_scaled, encoded_Y
 
 
 def process_testing_data():
@@ -210,9 +211,19 @@ lambdas = [1e-3, 1e-2, 1e-1, 1e-0]
 # Train and validate SVM on validation dataset
 ########################################################
 validation_accuracies = {}
+matrix_A = {}
+b = {}
+accuracy_vectors = []
+magnitude_vectors = []
 for l in lambdas:
-    validation_accuracies[l] = train(l, 50, 300)
-        
+    validation_accuracies[l], matrix_A[l], b[l], accuracy_vector, magnitude_vector = train(l, 50, 300)
+    accuracy_vectors.append(accuracy_vector)
+    magnitude_vectors.append(magnitude_vector)
+
+
+plot_images(accuracy_vectors, 'Accuracy', 'Penalty error', [0, 1], 'lower right')
+plot_images(magnitude_vectors, 'Magnitude', 'Magnitude', [0, 3], 'upper left')
+
 print(validation_accuracies)
 
 
@@ -222,8 +233,7 @@ print(validation_accuracies)
 x_test = process_testing_data()
 test_predictions = {}
 for l in lambdas:
-    _, matrix_A, b = validation_accuracies[l]
-    test_predictions[l] = predict(np.array(x_test), len(x_test), matrix_A, b)
+    test_predictions[l] = predict(np.array(x_test), len(x_test), matrix_A[l], b[l])
     decoded_pred = decode_labels(test_predictions[l])
     write_array_to_file("Lambda = {}".format(l), decoded_pred)
 
