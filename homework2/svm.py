@@ -1,240 +1,160 @@
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
-import math
+import csv
 import matplotlib.pyplot as plt
 
-np.random.seed(12)
+
+class supportVectorMachine:
+    def __init__(self, weight, b=0.0, reg_lambda=1e-1, step_length=0.1):
+        self.reg_lambda = reg_lambda
+        self.weight = np.array(weight)
+        self.b = b
+        self.X = np.array([])
+        self.Y = np.array([])
+        self.cost = 0
+        self.training_cost = np.array([])
+        self.step_length = step_length
+
+    def cost_function(self, X, Y):
+        self.training_cost = 1 - (np.dot(X, self.weight)+self.b)*Y
+        self.training_cost[self.training_cost<0] = 0
+        self.cost = np.mean(self.training_cost) + self.reg_lambda*np.dot(self.weight.T, self.weight)/2
+        print(" training cost is ", self.cost)
+
+    def update_weight(self):
+        #print("current weight: ", self.weight)
+        weight_to_update=self.X*self.Y.reshape((self.Y.shape[0],1))
+        #print("X is:", self.X)
+        #print("Y is:", self.Y)
+        #print("weight_to_update of yx", weight_to_update)
+        zero_cost_matrix = 1 - (np.dot(self.X, self.weight)+self.b)*self.Y
+        zero_cost_matrix[zero_cost_matrix<0]=0
+        #print("zero cost maxtrix as filter: ", zero_cost_matrix)
+        weight_to_update = weight_to_update*((zero_cost_matrix!=0).reshape((zero_cost_matrix.shape[0],1)))
+        #print("masking 'cost = 0', weight_to_update", weight_to_update)
+        #print("regularization term is ", self.reg_lambda*self.weight)
+        weight_to_update = -(1/self.X.shape[0])*np.sum(weight_to_update,axis=0)+self.reg_lambda*self.weight
+        #print("final weight_to_update: ",weight_to_update)
+        self.weight = self.weight - self.step_length*weight_to_update
+        #print("new weight: ", self.weight)
+        # to update b
+        #print("current b: ", self.b)
+        self.b = self.b - self.step_length*(-np.dot(self.Y, 1*(zero_cost_matrix!=0))/self.X.shape[0])
+        #print("updated_b: ", self.b)
+
+    def StochasticGradientDesc(self, X, Y):
+        self.X = X
+        self.Y = Y
+        self.update_weight()
+
+    def predict(self, X):
+        #print("raw output is: ", np.dot(X, self.weight)+self.b)
+        return 2*((np.dot(X, self.weight)+self.b)>0)-1
+
+    def set_learningRate(self, lr):
+        self.step_length = lr
 
 
-# Calculation of gamma i (aT*xi+b)
-def calc_gamma_i(x, a, b):
-    a = np.array(a)
-    result = (np.dot(a, x) + b)
-    return result
+data = []
+X = []
+Y = []
+# import the data from the csv.
+with open('./homework2/train.txt', newline='') as f:
+    reader = csv.reader(f, delimiter=',')
+    for row in reader:
+        data.append(row)
 
+data = np.array(data)
+np.random.shuffle(data)
+# extract only continuous variable values to form X
+X = data[:, (0,2,4,10,11,12)].astype(float)
+# extract last col to form classes of 1 for >50K and -1 for <=50K
+Y = 2*(data[:, 14] == ' >50K')-1
+# rescale the features to same variance and zero means.
+X = (X - np.mean(X, axis=0))/np.std(X,axis=0)
+rescaled_data = np.column_stack((X,Y))
 
-#updating model parameters following the gradient decent procedure
-def gradient_descent(feature_x, yi, matrix_A, b, l, epoch, stochastic_step_len, stochastic_step_size):
-    gamma = calc_gamma_i(feature_x[0], matrix_A, b)
-    # Calculate batch size
-    batch_size = 3 / ((stochastic_step_len * epoch) + stochastic_step_size)
-    if yi * gamma >= 1:
-        matrix_A = matrix_A - (batch_size * l * matrix_A)
-    else :
-        penalty = yi * feature_x
-        reg_params = np.array(l) * matrix_A
-        error_coef = reg_params - penalty
-        matrix_A = np.array([i - j for i, j in zip(matrix_A, batch_size * error_coef)])[0][0]  
-        b = b - (batch_size * -yi)
-        
-    return matrix_A, b
+split_idx = int(data.shape[0]*0.1)
+hyperParmSearch_data = rescaled_data[:split_idx, :]
+train_data = rescaled_data[split_idx:, :]
 
+#regularisation_lambda = [1e-7, 1e-5, 1e-3, 1e-2, 1e-1, 1]
+regularisation_lambda = [1e-3, 1e-2, 1e-1, 1]
+step_length_m = 1
+step_length_n = 300
+total_epoch = 60
+steps = 300
+batch_size = 1
+accuracy_history = np.zeros((len(regularisation_lambda), int(steps*total_epoch/30)))
+svm = None
+max_achieved_accuracy = 0
+max_achieved_weight = []
+for idx_lambda in range(len(regularisation_lambda)):
+    weight = np.random.rand(X.shape[1])
+    svm = supportVectorMachine(weight=weight, reg_lambda=regularisation_lambda[idx_lambda])
+    for i in range(total_epoch):
+        print("******epoch: ", i," *******")
+        lr = step_length_m/(0.01*i+step_length_n)
+        svm.set_learningRate(lr)
 
-def write_array_to_file(name, list):
-    with open(name+'.txt', 'w') as f:
-        for item in list:
-            f.write("%s\n" % item)
+        np.random.shuffle(train_data)
+        held_out = train_data[:50, :]
+        train = train_data[50:, :]
+        for j in range(1, steps+1):
+            selected = np.random.randint(train.shape[0], size=batch_size)
+            svm.StochasticGradientDesc(train[selected, :-1], train[selected, -1])
+            if j % 30 == 0:
+                print("--->Step: ", j, " <----")
+                validation_result = svm.predict(hyperParmSearch_data[:, :-1])
+                validation_accuracy = sum(validation_result == hyperParmSearch_data[:, -1]) / hyperParmSearch_data.shape[0]
+                print(" Validation accuracy is ", validation_accuracy*100, "%")
+                accuracy_history[idx_lambda, int((i*steps+j)/30)-1]=validation_accuracy
+                if validation_accuracy >= max_achieved_accuracy:
+                    max_achieved_accuracy = validation_accuracy
+                    max_achieved_weight = svm.weight
+                #svm.cost_function(hyperParmSearch_data[:, :-1], hyperParmSearch_data[:, -1])
+            '''
+                validation_result = svm.predict(held_out[:, :-1])
+                validation_accuracy = sum(validation_result == held_out[:, -1]) / held_out.shape[0]
+                print(" Validation accuracy is ", validation_accuracy*100, "%")
+                svm.cost_function(held_out[:, :-1], held_out[:, -1])
+            '''
 
+'''
+test_result = svm.predict(hyperParmSearch_data[:, :-1])
+test_accuracy = sum(test_result == hyperParmSearch_data[:, -1]) / hyperParmSearch_data.shape[0]
+print(" Test data accuracy is ", test_accuracy*100, "%")
+svm.cost_function(hyperParmSearch_data[:, :-1], hyperParmSearch_data[:, -1])
+'''
+x_axis = range(int(steps*total_epoch/30))
+plt.plot(x_axis, accuracy_history[0])
+plt.plot(x_axis, accuracy_history[1])
+plt.plot(x_axis, accuracy_history[2])
+plt.plot(x_axis, accuracy_history[3])
+plt.ylim((0.5,1))
+plt.legend([regularisation_lambda[0], regularisation_lambda[1], regularisation_lambda[2], regularisation_lambda[3]], loc='lower right')
+plt.show()
 
-def accuracy(x, y, A, b):
-    predictions = predict(x, len(y), A, b)
-    correct = 0
-
-    for i in range(len(predictions)):
-        if predictions[i] == y[i]:
-            correct += 1
-          
-    return correct / float(len(y))
-
-
-# Get the magnitude of the coefficents vector
-def normalize_vector(x):
-    return math.sqrt(sum(x**2))
-
-
-def plot_images(vectors, title, ylabel, ylim, loc):
-    plt.title(title)
-    plt.xlabel("Epoch")
-    plt.ylabel(ylabel)
-    plt.ylim(ylim)
-    plt.xlim([0, 50])
-
-    for vector in vectors:
-        plt.plot(vector)
-
-    plt.legend(['l = 1e-3', 'l = 1e-2', 'l = 1e-1', 'l = 1'], loc = loc)
-    plt.show()
-
-
-def train(l, epochs, steps):
-    matrix_a = [0.0 for w in range(np.shape(train_X)[1])]
-    b = 0
-    accuracy_vector = []
-    magnitude_vector = []
-
-    for epoch in range(epochs):
-        # Select 50 examples for each epoch
-        index = np.random.randint(len(train_X), size=50)
-        accuracy_data = train_X[index]
-        accuracy_labels = train_Y[index]
-        train_data = train_X[-index]
-        train_labels = train_Y[-index]
-        # For each of the steps in an epoch
-        for step in range(steps):
-            row_index = np.random.randint(len(train_labels), size=1)
-            feature_x = train_data[row_index]
-            yi = np.asmatrix(train_labels[row_index])
-      
-            # Estimate gamma and update the parameters
-            matrix_a, b = gradient_descent(feature_x, yi, matrix_a, b, l, epoch, stochastic_step_len, stochastic_step_size)
-
-            # Get magnitude and validation accuracy every 30 steps
-            if step % 30 == 0:
-                accuracy_val = accuracy(accuracy_data, accuracy_labels, matrix_a, b)
-                accuracy_vector.append(accuracy_val)
-                magnitude = normalize_vector(matrix_a)
-                magnitude_vector.append(magnitude)
-    
-    val_acc = accuracy(validate_X, validate_Y, matrix_a, b)
-        
-    return val_acc, matrix_a, b, accuracy_vector, magnitude_vector
-
-
-def predict(x, n_len, A, b):
-    predictions = []
-    for i in range(n_len):
-        row = x[i, :]
-        gamma = calc_gamma_i(row, A, b)
-        if gamma >= 0:
-            predictions.append(1)
+def save_for_submission(results):
+    fobj = open('./homework2/submission.txt', 'a+')
+    for i in results:
+        if i >= 1:
+            fobj.write('>50K\n')
         else:
-            predictions.append(-1)
-
-    return predictions
-
-
-names = [
-    'age',
-    'workclass',
-    'fnlwgt',
-    'education',
-    'education-num',
-    'marital-status',
-    'occupation',
-    'relationship',
-    'race',
-    'sex',
-    'capital-gain',
-    'capital-loss',
-    'hours-per-week',
-    'native-country',
-    'income',
-]
+            fobj.write('<=50K\n')
+    fobj.close()
 
 
+grader_data = []
+with open('./homework2/test.txt', newline='') as f:
+    reader = csv.reader(f, delimiter=',')
+    for row in reader:
+        grader_data.append(row)
 
-def train_test_validate_split(features, labels):
-    #split 90:10 training:validation
-    train_x, validation_x, train_y, validation_y = train_test_split(features, labels, test_size=0.1,
-                                                                  random_state=12)
-    
-    return train_x, train_y,  validation_x, validation_y
-
-
-def encode_labels(labels_y):
-    labels = []
-    for row in list(labels_y):
-        row = str(row).strip().replace('.', "")
-
-        if row == "<=50K":
-            labels.append(-1)
-        else:
-            labels.append(1)
-    return pd.Series(labels)
-
-
-def decode_labels(labels_y):
-    labels = []
-    for row in list(labels_y):
-        if row == -1:
-            labels.append("<=50K")
-        else:
-            labels.append(">50K")
-    return labels
-
-
-def process_training_data():
-    train_data = pd.read_csv('train.csv', names=names, na_values=" ?")
-
-    train_data = train_data.iloc[:, [0, 2, 4, 10, 11, 12, 14]]
-
-    data = train_data.dropna()
-    data_X = data.iloc[:, 0:6]
-    data_clean_X = data_X.loc[:, data_X.dtypes == "int64"]
-    data_clean_Y = data.iloc[:, -1]
-    X_scaled = preprocessing.scale(data_clean_X)
-    encoded_Y = encode_labels(data_clean_Y)
-
-    return X_scaled, encoded_Y
-
-
-def process_testing_data():
-    test_data = pd.read_csv('test.csv', names=names, na_values=" ?")
-
-    test_data = test_data.iloc[:, [0, 2, 4, 10, 11, 12]]
-
-    data = test_data.dropna()
-    data_X = data.iloc[:, 0:6]
-    data_clean_X = data_X.loc[:, data_X.dtypes == "int64"]
-    X_scaled = preprocessing.scale(data_clean_X)
-
-    return X_scaled
-
-
-X_scaled, encoded_Y = process_training_data()
-train_X, train_Y, validate_X, validate_Y = train_test_validate_split(X_scaled, encoded_Y)
-
-train_X = np.array(train_X)
-train_Y = np.array(train_Y)
-validate_X = np.array(validate_X)
-validate_Y = np.array(validate_Y)
-
-stochastic_step_len = 0.05
-stochastic_step_size = 15
-lambdas = [1e-3, 1e-2, 1e-1, 1e-0]
-
-
-########################################################
-# Train and validate SVM on validation dataset
-########################################################
-validation_accuracies = {}
-matrix_A = {}
-b = {}
-accuracy_vectors = []
-magnitude_vectors = []
-for l in lambdas:
-    validation_accuracies[l], matrix_A[l], b[l], accuracy_vector, magnitude_vector = train(l, 50, 300)
-    accuracy_vectors.append(accuracy_vector)
-    magnitude_vectors.append(magnitude_vector)
-
-
-plot_images(accuracy_vectors, 'Accuracy', 'Penalty error', [0, 1], 'lower right')
-plot_images(magnitude_vectors, 'Magnitude', 'Magnitude', [0, 3], 'upper left')
-
-print(validation_accuracies)
-
-
-########################################################
-# Predict using SVM's trained parameters on testing dataset
-########################################################
-x_test = process_testing_data()
-test_predictions = {}
-for l in lambdas:
-    test_predictions[l] = predict(np.array(x_test), len(x_test), matrix_A[l], b[l])
-    decoded_pred = decode_labels(test_predictions[l])
-    write_array_to_file("Lambda = {}".format(l), decoded_pred)
-
+grader_data = np.array(grader_data)
+grader_X = grader_data[:, (0,2,4,10,11,12)].astype(float)
+# rescale the features to same variance and zero means.
+grader_X = (grader_X - np.mean(grader_X, axis=0))/np.std(grader_X,axis=0)
+grader_result = svm.predict(grader_X)
+save_for_submission(grader_result)
 
 
