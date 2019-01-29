@@ -19,8 +19,7 @@ def calc_gamma_i(x, a, b):
 def gradient_descent(feature_x, yi, matrix_A, b, l, epoch, stochastic_step_len, stochastic_step_size):
     gamma = calc_gamma_i(feature_x[0], matrix_A, b)
     # Calculate batch size
-    batch_size = 1 / ((stochastic_step_len * epoch) + stochastic_step_size)
-
+    batch_size = 3 / ((stochastic_step_len * epoch) + stochastic_step_size)
     if yi * gamma >= 1:
         matrix_A = matrix_A - (batch_size * l * matrix_A)
     else :
@@ -202,8 +201,8 @@ train_Y = np.array(train_Y)
 validate_X = np.array(validate_X)
 validate_Y = np.array(validate_Y)
 
-stochastic_step_len = .01
-stochastic_step_size = 50
+stochastic_step_len = 0.05
+stochastic_step_size = 15
 lambdas = [1e-3, 1e-2, 1e-1, 1e-0]
 
 
