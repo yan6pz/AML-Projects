@@ -6,7 +6,7 @@ Created on Fri Feb  1 22:32:49 2019
 """
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+#from sklearn.preprocessing import StandardScaler
 
 def PCA(dataset, n_components):
 
@@ -14,7 +14,7 @@ def PCA(dataset, n_components):
     #print(col_mean)
     # center columns by subtracting column means
     
-    C = dataset #- mean_vec
+    C = dataset - col_mean
     
     cov_mat = (C - col_mean).T.dot((C - col_mean)) / (C.shape[0]-1)
     
@@ -41,7 +41,7 @@ def PCA(dataset, n_components):
     
     #print('Matrix W:\n', component_mat)
 
-    return component_mat
+    return component_mat, col_mean
 
 
 def MSE(dataset, component_mat):
@@ -65,7 +65,7 @@ data4 = np.array(pd.read_csv('dataIV.csv', na_values=" ?"))
 data5 = np.array(pd.read_csv('dataV.csv', na_values=" ?"))
 noisy_data = [data1, data2, data3, data4, data5] 
 
-N = StandardScaler().fit_transform(N)
+#N = StandardScaler().fit_transform(N)
 
 N0 = np.mean(N, axis=0)
 N0 = np.resize(N0,(N.shape[0], N.shape[1]))
@@ -91,7 +91,12 @@ for i in range(len(noisy_data)):
         #do not dot if it is 0 PC
         if j != 0:
             #reconstructed version on noisy dataset i using PC of noiseless data j
-            pca_representation = noisy_data[i].dot(noiseless_data_PCs[j])
+            pc, mean = noiseless_data_PCs[j]
+            pca_representation = noisy_data[i].dot(pc)
+            #unrotate and untranslate adding mean
+            
+            pca_representation = np.dot( pca_representation, pc.T)
+            pca_representation += mean
         else:
             pca_representation = noiseless_data_PCs[j]
             
@@ -100,14 +105,16 @@ for i in range(len(noisy_data)):
        
     
     #noisy  
-    noisy_data[i] = StandardScaler().fit_transform(noisy_data[i])
+    #noisy_data[i] = StandardScaler().fit_transform(noisy_data[i])
     for k in range(5):
         
         if k != 0:
-            pc_k_noisy = PCA(noisy_data[i], k)
+            pc_k_noisy, mean = PCA(noisy_data[i], k)
             #reconstructed version on noisy dataset i using k PC computed from
             # mean and covmat of the same set
             pca_representation = noisy_data[i].dot(pc_k_noisy)
+            pca_representation = np.dot( pca_representation, pc_k_noisy.T)
+            pca_representation += mean
             if i == 1 and k==2:
                 data1_2pc_representation = pca_representation
         else:
@@ -129,8 +136,8 @@ data1_2pc_representation = np.around(data1_2pc_representation, decimals=2)
                                      
 print(mse_matrix)
 
-np.savetxt("shterev2-numbers.csv", mse_matrix, delimiter=",", fmt='%5.2f')
-np.savetxt("shterev2-recon.csv", data1_2pc_representation, delimiter=",", fmt='%5.2f')
+np.savetxt("shterev2-numbers_unrotated_untranslated.csv", mse_matrix, delimiter=",", fmt='%5.2f')
+np.savetxt("shterev2-recon_unrotated_untranslated.csv", data1_2pc_representation, delimiter=",", fmt='%5.2f')
 
 
  
