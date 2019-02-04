@@ -59,13 +59,14 @@ def MSE(dataset, component_mat):
 def reconstruct(u, mean, data):
     
     mean = np.resize(mean,(noisy_data[i].shape[0], noisy_data[i].shape[1]))
-
     ri = np.dot((data - mean), u) #ri = UT mi = UT(xi − mean ({x})).
+    
+    #generate pi
     pi = ri
     if 4 > ri.shape[1]:
         zeros = np.zeros((4 - ri.shape[1] , ri.shape[0]))
         pi = np.concatenate((ri, zeros.T), axis=1)
-    #xˆi = Upi + mean ({x})
+    #xi = Upi + mean ({x})
 
     #unrotate and untranslate adding mean: xˆi = Upi + mean ({x})
     xi = np.dot(pi, u)
