@@ -19,7 +19,7 @@ noiseless = np.array(data["iris.csv"])
 fobj = open('./homework3/minyuan3-numbers.csv', 'a+')
 fobj.write('0N,1N,2N,3N,4N,0c,1c,2c,3c,4c\n')
 
-for index, name in enumerate(files_names[1:]):
+for name in files_names[1:]:
     data_set = np.array(data[name])
     n = []
     c = []
