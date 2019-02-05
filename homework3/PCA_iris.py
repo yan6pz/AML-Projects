@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Feb  1 22:32:49 2019
 
-@author: Yanis
-"""
 import pandas as pd
 import numpy as np
 #from sklearn.preprocessing import StandardScaler
@@ -16,7 +12,7 @@ def PCA(dataset, n_components):
     
     C = dataset 
     
-    cov_mat = (C - col_mean).T.dot((C - col_mean)) / (C.shape[0]-1)
+    cov_mat = (C - col_mean).T.dot((C - col_mean)) / (C.shape[0])
     
     #print('Covariance matrix \n%s' %cov_mat)
     
@@ -53,13 +49,15 @@ def MSE(dataset, component_mat):
    #     zeros = np.zeros((dataset.shape[1] - component_mat.shape[1] , component_mat.shape[0]))
     #    component_mat = np.concatenate((component_mat, zeros.T), axis=1)
     
-    mse = (np.square(dataset - component_mat)).mean(axis=0)
+    mse = (np.square(component_mat-dataset)).mean(axis=0)
     return mse
     
 def reconstruct(u, mean, data):
     
     mean = np.resize(mean,(noisy_data[i].shape[0], noisy_data[i].shape[1]))
-    ri = np.dot((data - mean), u) #ri = UT mi = UT(xi − mean ({x})).
+    print(u.T)
+    print(data-mean)
+    ri = np.dot(u.T, (data - mean)) #ri = UT mi = UT(xi − mean ({x})).
     
     #generate pi
     pi = ri
@@ -69,7 +67,7 @@ def reconstruct(u, mean, data):
     #xi = Upi + mean ({x})
 
     #unrotate and untranslate adding mean: xˆi = Upi + mean ({x})
-    xi = np.dot(pi, u)
+    xi = np.dot(u, pi)
     #reshape xi to have the shape of the original data
     if 4 > xi.shape[1]:
         zeros = np.zeros((4 - xi.shape[1] , xi.shape[0]))
@@ -137,7 +135,7 @@ for i in range(len(noisy_data)):
             xi = np.resize(xi,(noisy_data[i].shape[0], noisy_data[i].shape[1]))
             
         #MSE between the noisy version i and the k-th pca representation of 
-        mse.append(sum(MSE(noisy_data[i], xi)))
+        mse.append(sum(MSE(N, xi)))
     
     mse_matrix.append(mse)
 
@@ -151,8 +149,8 @@ data1_2pc_representation = np.around(data1_2pc_representation, decimals=2)
                                      
 print(mse_matrix)
 
-np.savetxt("shterev2-numbers_unrotated_untranslated1.csv", mse_matrix, delimiter=",", fmt='%5.2f')
-np.savetxt("shterev2-recon_unrotated_untranslated1.csv", data1_2pc_representation, delimiter=",", fmt='%5.2f')
+np.savetxt("shterev2-numbers.csv", mse_matrix, delimiter=",", fmt='%5.4f')
+np.savetxt("shterev2-recon.csv", data1_2pc_representation, delimiter=",", fmt='%5.4f')
 
 
  
