@@ -4,23 +4,10 @@ import pandas as pd
 import numpy as np
 #from sklearn.preprocessing import StandardScaler
 
-def PCA(dataset, n_components):
+def PCA(dataset, col_mean):
 
-    col_mean = np.mean(dataset, axis=0)
-    #print(col_mean)
-    # center columns by subtracting column means
-    
-    C = dataset 
-    
-    cov_mat = (C - col_mean).T.dot((C - col_mean)) / (C.shape[0])
-    
-    #print('Covariance matrix \n%s' %cov_mat)
-    
+    cov_mat = np.dot((dataset - col_mean),(dataset - col_mean).T) / (dataset.shape[1])
     eigenvalues, eigenvectors = np.linalg.eig(cov_mat)
-    
-    #print('Eigenvectors \n%s' %eigenvectors)
-    #print('\nEigenvalues \n%s' %eigenvalues)
-    
     
     # Make a list of (eigenvalue, eigenvector) tuples
     eigen_pairs = [(np.abs(eigenvalues[i]), eigenvectors[:,i]) for i in range(len(eigenvalues))]
@@ -30,69 +17,45 @@ def PCA(dataset, n_components):
     eigen_pairs = eigen_pairs[::-1]
     
     components = []
-    for i in range(n_components):
+    for i in range(4):
         components.append(eigen_pairs[i][1].reshape(4,1))
         
-    component_mat = np.hstack((components))
+    eigen_vec = np.hstack((components))
     
-    #print('Matrix W:\n', component_mat)
-
-    return component_mat, col_mean
+    return eigen_vec
 
 
 def MSE(dataset, component_mat):
  
-    #print(pd.DataFrame(dataset).tail())
-    #print(pd.DataFrame(component_mat).tail())
-    
-    #if dataset.shape[1] > component_mat.shape[1]:
-   #     zeros = np.zeros((dataset.shape[1] - component_mat.shape[1] , component_mat.shape[0]))
-    #    component_mat = np.concatenate((component_mat, zeros.T), axis=1)
-    
-    mse = (np.square(component_mat-dataset)).mean(axis=0)
+    mse = np.sum(np.square(component_mat-dataset))/dataset.shape[1]
     return mse
     
-def reconstruct(u, mean, data):
-    
-    mean = np.resize(mean,(noisy_data[i].shape[0], noisy_data[i].shape[1]))
-    print(u.T)
-    print(data-mean)
+def reconstruct(u, mean, data, n_components):
+
     ri = np.dot(u.T, (data - mean)) #ri = UT mi = UT(xi − mean ({x})).
     
     #generate pi
-    pi = ri
-    if 4 > ri.shape[1]:
-        zeros = np.zeros((4 - ri.shape[1] , ri.shape[0]))
-        pi = np.concatenate((ri, zeros.T), axis=1)
+    pi = np.zeros(ri.shape)
+    pi[:n_components, :] = ri[:n_components, :]
     #xi = Upi + mean ({x})
-
     #unrotate and untranslate adding mean: xˆi = Upi + mean ({x})
     xi = np.dot(u, pi)
     #reshape xi to have the shape of the original data
-    if 4 > xi.shape[1]:
-        zeros = np.zeros((4 - xi.shape[1] , xi.shape[0]))
-        xi = np.concatenate((xi, zeros.T), axis=1)
 
     xi += mean
     return xi
    
-N = np.array(pd.read_csv('iris.csv', na_values=" ?"))
-data1 = np.array(pd.read_csv('dataI.csv', na_values=" ?"))
-data2 = np.array(pd.read_csv('dataII.csv', na_values=" ?"))
-data3 = np.array(pd.read_csv('dataIII.csv', na_values=" ?"))
-data4 = np.array(pd.read_csv('dataIV.csv', na_values=" ?"))
-data5 = np.array(pd.read_csv('dataV.csv', na_values=" ?"))
+N = np.array(pd.read_csv('iris.csv', na_values=" ?")).T
+data1 = np.array(pd.read_csv('dataI.csv', na_values=" ?")).T
+data2 = np.array(pd.read_csv('dataII.csv', na_values=" ?")).T
+data3 = np.array(pd.read_csv('dataIII.csv', na_values=" ?")).T
+data4 = np.array(pd.read_csv('dataIV.csv', na_values=" ?")).T
+data5 = np.array(pd.read_csv('dataV.csv', na_values=" ?")).T
 noisy_data = [data1, data2, data3, data4, data5] 
 
-#N = StandardScaler().fit_transform(N)
 
-N0 = np.mean(N, axis=0)
-N0 = np.resize(N0,(N.shape[0], N.shape[1]))
-N1 = PCA(N, 1)
-N2 = PCA(N, 2)
-N3 = PCA(N, 3)
-N4 = PCA(N, 4)
-noiseless_data_PCs = [N0, N1, N2, N3, N4]
+N0 = np.mean(N, axis=1, keepdims=True)
+u_noiseless = PCA(N, N0 )
 
 data1_2pc_representation = []
 mse_matrix = []
@@ -106,43 +69,36 @@ mse_matrix = []
 for i in range(len(noisy_data)):
     mse = []
     #noiseless
-    for j in range(len(noiseless_data_PCs)):
+    for j in range(5):
         #do not dot if it is 0 PC
         if j != 0:
             #reconstructed version on noisy dataset i using PC of noiseless data j
-            u, mean = noiseless_data_PCs[j]
-            xi = reconstruct(u, mean, noisy_data[i])
+            xi = reconstruct(u_noiseless, N0, noisy_data[i], j)
         else:
             xi = N0
             
         #MSE between the noiseless version N and the pca representation
-        mse.append(sum(MSE(N, xi)))
+        mse.append(MSE(N, xi))
        
-    
-    #noisy  
-    #noisy_data[i] = StandardScaler().fit_transform(noisy_data[i])
+    mean_noisy = np.mean(noisy_data[i], axis=1, keepdims=True)
+    u_noisy = PCA(noisy_data[i], mean_noisy)
+
     for k in range(5):
         
         if k != 0:
-            u, mean = PCA(noisy_data[i], k)
             #reconstructed version on noisy dataset i using k PC computed from
             # mean and covmat of the same set
-            xi = reconstruct(u, mean, noisy_data[i])
-            if i == 1 and k==2:
-                data1_2pc_representation = xi
+            xi = reconstruct(u_noisy,mean_noisy, noisy_data[i], k)
+            if i == 0 and k==2:
+                data1_2pc_representation = xi.T
         else:
-            xi = np.mean(noisy_data[i], axis=0)
-            xi = np.resize(xi,(noisy_data[i].shape[0], noisy_data[i].shape[1]))
+            xi = mean_noisy
             
         #MSE between the noisy version i and the k-th pca representation of 
-        mse.append(sum(MSE(N, xi)))
+        mse.append(MSE(N, xi))
     
     mse_matrix.append(mse)
 
-
-#print(mse_matrix)
-zeros = np.zeros((2 , 150))
-data1_2pc_representation = np.concatenate((data1_2pc_representation, zeros.T), axis=1)
 
 mse_matrix = np.around(mse_matrix, decimals=2)
 data1_2pc_representation = np.around(data1_2pc_representation, decimals=2)
