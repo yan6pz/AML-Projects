@@ -141,7 +141,7 @@ def calculate_euclidean_distance(mean_images):
 
 def estimate_squared_error(categories, category_means, n_classes, n_pcas):
 
-    xhat_list = []
+    list_x = []
     error = []
     error_unscaled = []
     twentieth_pca = []
@@ -150,14 +150,14 @@ def estimate_squared_error(categories, category_means, n_classes, n_pcas):
         pca = PCA()
         pca.fit(categories[i])
         twentieth_pca.append(pca.components_[:n_pcas, :])
-
+        print(twentieth_pca)
         class_pcas = pca.transform(categories[i])[:, :n_pcas]
         components = pca.components_[:n_pcas, :]
-        xhat_list.append(np.dot(class_pcas, components))
-        xhat_list[i] = np.add(xhat_list[i], category_means[i, :])
-
-        error.append(np.sum(np.square(xhat_list[i] - categories[i])))
-        error_unscaled.append(np.sum(np.square(255 * (xhat_list[i] - categories[i]))))
+        list_x.append(np.dot(class_pcas, components))
+        list_x[i] = np.add(list_x[i], category_means[i, :])
+        print(list_x)
+        error.append(np.sum(np.square(list_x[i] - categories[i])))
+        error_unscaled.append(np.sum(np.square(255 * (list_x[i] - categories[i]))))
 
     return np.asarray(error)
 
