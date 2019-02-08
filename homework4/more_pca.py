@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 import pickle
+import math
 import matplotlib.pyplot as plt
 
 
@@ -112,15 +113,14 @@ def data_reader():
 def construct_mean_category():
     dt, features, classes = data_reader()
 
-    mean_images = pd.DataFrame(dt[:, 0:3072]).groupby(pd.Series(dt[:, 3072]), axis=0).mean()
     categories = []
+    category_mean = []
 
     for i in range(10):
         categories.append(features[classes == i])
+        category_mean.append(np.mean(features[classes == i], axis=0))
 
-    mean_images = np.asarray(mean_images)
-
-    return mean_images, categories
+    return  categories, np.array(category_mean)
 
 
 def calculate_euclidean_distance(mean_images):
@@ -150,26 +150,50 @@ def estimate_squared_error(categories, category_means, n_classes, n_pcas):
         pca = PCA()
         pca.fit(categories[i])
         twentieth_pca.append(pca.components_[:n_pcas, :])
-        print(twentieth_pca)
+
         class_pcas = pca.transform(categories[i])[:, :n_pcas]
         components = pca.components_[:n_pcas, :]
         list_x.append(np.dot(class_pcas, components))
         list_x[i] = np.add(list_x[i], category_means[i, :])
-        print(list_x)
+
         error.append(np.sum(np.square(list_x[i] - categories[i])))
         error_unscaled.append(np.sum(np.square(255 * (list_x[i] - categories[i]))))
 
     return np.asarray(error)
 
 
-labels = ["airplain", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-category_means, categories = construct_mean_category()
+def view_image(images, labels):
+    images = np.array(images)
+    print(images)
+    images = images * 255
+    print(images)
+    reshaped_imgs = images.reshape(10, 3, 32, 32).transpose(0,2,3,1).astype("uint8")
+    fig, axes1 = plt.subplots(2,5,figsize=(3,3))
+    i = 0
 
+    for j in range(2):
+        for k in range(5):
+            axes1[j][k].set_axis_off()
+            axes1[j][k].set_title(labels[i])
+            axes1[j][k].imshow(reshaped_imgs[i: i+1][0])
+            i += 1
+
+    return plt
+
+
+
+def plot_mean_image(X, label):
+    view_image(X, label).show()
+
+labels = ["airplain", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+categories, category_mean = construct_mean_category()
+
+plot_mean_image(category_mean, labels)
 ###################################
 # Plot the squared error
 ###################################
 
-error_array = estimate_squared_error(categories, category_means, 10, 20)
+error_array = estimate_squared_error(categories, category_mean, 10, 20)
 scatter_plot_error(error_array)
 
 
@@ -178,7 +202,7 @@ scatter_plot_error(error_array)
 ###################################
 
 
-dist = calculate_euclidean_distance(category_means)
+dist = calculate_euclidean_distance(category_mean)
 print(dist)
 np.savetxt("partb_distances1.csv", dist, delimiter=",", fmt='%5.4f')
 
@@ -196,8 +220,8 @@ scatter_plot_PCA(V, "2D scatter plot(Euclidean distance)")
 #Part C: (1/2)(E(A → B) + E(B → A))
 
 #######################################
-error_a_b = probability_similarity_measure(categories, category_means, True)
-error_b_a = probability_similarity_measure(categories, category_means, False)
+error_a_b = probability_similarity_measure(categories, category_mean, True)
+error_b_a = probability_similarity_measure(categories, category_mean, False)
 
 error_total = 0.5 * (error_a_b + error_b_a)
 print(error_total)
