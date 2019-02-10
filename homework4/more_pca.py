@@ -1,10 +1,8 @@
 import numpy as np
-import pandas as pd
 from sklearn.decomposition import PCA
 from scipy.spatial.distance import pdist
 from scipy.spatial.distance import squareform
 import pickle
-import math
 import matplotlib.pyplot as plt
 
 
@@ -54,7 +52,6 @@ def construct_category_img_w_error(all_data):
     for i in range(10):
         this_category = all_data[all_data[:, -1] == i][:,:-1]
         category_mean.append(np.mean(this_category, axis=0))
-        #pca = PCA(n_components=20, svd_solver='full')
         pca = PCA(n_components=20)
         pca.fit(this_category)
         category_comps.append(pca.components_)
@@ -65,7 +62,7 @@ def construct_category_img_w_error(all_data):
 
 
 def calculate_euclidean_distance(mean_images):
-    fobj = open('./homework4/partb_distances.csv', 'a+')
+    fobj = open('partb_distances.csv', 'a+')
     distance = squareform(pdist(mean_images, 'euclidean'))**2
     for row in distance:
         fobj.write(', '.join(row.astype(str)) + '\n')
@@ -100,15 +97,15 @@ def calculate_EAB_distance(all_data):
             D[i,j] = (calculate_E_A_B_error(A_category, B_category)+calculate_E_A_B_error(B_category, A_category))/2
             if i!=j:
                 D[j,i] = D[i,j]
-    fobj = open("./homework4/partc_distances.csv",'a+')
+    fobj = open("partc_distances.csv",'a+')
     for row in D:
         fobj.write(', '.join(row.astype(str)) + '\n')
     fobj.close()
     return D
 
 
-pickle_data = ["./homework4/cifar-10-batches-py/data_batch_1", "./homework4/cifar-10-batches-py/data_batch_2", "./homework4/cifar-10-batches-py/data_batch_3",
-                   "./homework4/cifar-10-batches-py/data_batch_4", "./homework4/cifar-10-batches-py/data_batch_5", "./homework4/cifar-10-batches-py/test_batch"]
+pickle_data = ["cifar-10-batches-py/data_batch_1", "cifar-10-batches-py/data_batch_2", "cifar-10-batches-py/data_batch_3",
+                   "cifar-10-batches-py/data_batch_4", "cifar-10-batches-py/data_batch_5", "cifar-10-batches-py/test_batch"]
 
 data = []
 for i in range(len(pickle_data)):
