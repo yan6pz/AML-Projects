@@ -23,6 +23,14 @@ def load_data(data):
         classes = np.concatenate((classes, data[i][b'labels']))
     return features, classes
 
+def plot_mean_image(category_mean, labels):
+    fig, axes1 = plt.subplots(2, 5, figsize=(5, 5))
+    for j in range(2):
+        for k in range(5):
+            axes1[j][k].set_axis_off()
+            axes1[j][k].set_title(labels[j*5+k])
+            axes1[j][k].imshow(category_mean[j*5+k].astype(int).reshape((32,32,3), order='F').transpose((1,0,2)))
+    plt.show()
 
 def bar_plot_error(error_vec, labels):
     plt.bar(np.arange(len(error_vec)), error_vec)
@@ -115,6 +123,7 @@ labels = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse
 # Part A: Get Error for each image
 #############################
 category_mean, category_comps, category_recon_img, category_error = construct_category_img_w_error(all_data)
+plot_mean_image(category_mean, labels)
 # Plot the squared error
 bar_plot_error(category_error,labels)
 
@@ -135,18 +144,7 @@ principal_coordinate_analysis(D)
 converted = np.dot(part_c_pca.components_, mean_centered.T)
 restored_A_B = np.dot(part_c_pca.components_.T, converted).T + category_mean[0]'''
 
-'''def plot_mean_image(category_mean, labels):
-    fig, axes1 = plt.subplots(2, 5, figsize=(5, 5))
-    for j in range(2):
-        for k in range(5):
-            axes1[j][k].set_axis_off()
-            axes1[j][k].set_title(labels[j*5+k])
-            axes1[j][k].imshow(category_mean[j*5+k].astype(int).reshape((32,32,3), order='F').transpose((1,0,2)))
-    plt.show()
-
-
-plot_mean_image(category_mean, labels)
-
+'''
 def estimate_squared_error(categories, category_means, n_classes, n_pcas):
 
     list_x = []
