@@ -62,7 +62,7 @@ def construct_category_img_w_error(all_data):
 
 
 def calculate_euclidean_distance(mean_images):
-    fobj = open('partb_distances.csv', 'a+')
+    fobj = open('./homework4/partb_distances.csv', 'a+')
     distance = squareform(pdist(mean_images, 'euclidean'))**2
     for row in distance:
         fobj.write(', '.join(row.astype(str)) + '\n')
@@ -97,15 +97,15 @@ def calculate_EAB_distance(all_data):
             D[i,j] = (calculate_E_A_B_error(A_category, B_category)+calculate_E_A_B_error(B_category, A_category))/2
             if i!=j:
                 D[j,i] = D[i,j]
-    fobj = open("partc_distances.csv",'a+')
+    fobj = open("./homework4/partc_distances.csv",'a+')
     for row in D:
         fobj.write(', '.join(row.astype(str)) + '\n')
     fobj.close()
     return D
 
 
-pickle_data = ["cifar-10-batches-py/data_batch_1", "cifar-10-batches-py/data_batch_2", "cifar-10-batches-py/data_batch_3",
-                   "cifar-10-batches-py/data_batch_4", "cifar-10-batches-py/data_batch_5", "cifar-10-batches-py/test_batch"]
+pickle_data = ["./homework4/cifar-10-batches-py/data_batch_1", "./homework4/cifar-10-batches-py/data_batch_2", "./homework4/cifar-10-batches-py/data_batch_3",
+                   "./homework4/cifar-10-batches-py/data_batch_4", "./homework4/cifar-10-batches-py/data_batch_5", "./homework4/cifar-10-batches-py/test_batch"]
 
 data = []
 for i in range(len(pickle_data)):
@@ -140,56 +140,3 @@ principal_coordinate_analysis(D)
 '''mean_centered = all_data[all_data[:, -1] == 0][:,:-1]-category_mean[0]
 converted = np.dot(part_c_pca.components_, mean_centered.T)
 restored_A_B = np.dot(part_c_pca.components_.T, converted).T + category_mean[0]'''
-
-'''
-def estimate_squared_error(categories, category_means, n_classes, n_pcas):
-
-    list_x = []
-    error = []
-    error_unscaled = []
-    twentieth_pca = []
-
-    for i in range(n_classes):
-        pca = PCA()
-        pca.fit(categories[i])
-        twentieth_pca.append(pca.components_[:n_pcas, :])
-
-        class_pcas = pca.transform(categories[i])[:, :n_pcas]
-        components = pca.components_[:n_pcas, :]
-        list_x.append(np.dot(class_pcas, components))
-        list_x[i] = np.add(list_x[i], category_means[i, :])
-
-        error.append(np.sum(np.square(list_x[i] - categories[i])))
-        error_unscaled.append(np.sum(np.square(255 * (list_x[i] - categories[i]))))
-
-    return np.asarray(error)
-
-def calculate_error_per_item(pca3, label_i, cov_mat_i):
-    Xi = np.dot(pca3.transform(label_i), pca3.components_)
-    Xi = np.add(Xi, cov_mat_i)
-    error = np.sum(np.square(Xi - label_i))
-
-    return error
-
-
-def probability_similarity_measure(category, category_means, a_b_dir):
-    error_matrix = np.zeros((10, 10))
-    for i in range(9):
-        pca3 = PCA(n_components=20)
-        if a_b_dir is True:
-            pca3.fit(category[i+1])
-        else:
-            pca3.fit(category[i])
-        for j in range(i + 1, 10):
-            if a_b_dir is True:
-                label_i = category[j]
-                cov_mat_i = category_means[i, :]
-            else:
-                label_i = category[i]
-                cov_mat_i = category_means[j, :]
-            error_matrix[i, j] = calculate_error_per_item(pca3, label_i, cov_mat_i)
-            error_matrix[j, i] = error_matrix[i, j]  # make the matrix symetric
-
-    return error_matrix
-
-'''
