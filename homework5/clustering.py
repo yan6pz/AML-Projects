@@ -34,6 +34,7 @@ def segment_vectors(dir, file, seg_size):
 
 def train_test_split(dir, train_split_ratio):
     all_files_per_dir = os.listdir(dir)
+    np.random.shuffle(all_files_per_dir)
     train_count = int(train_split_ratio * len(all_files_per_dir))
     test_count = int((1 - train_split_ratio) * len(all_files_per_dir))
 
@@ -124,7 +125,7 @@ def construct_features(feature_vector, clusters_count, seg_size, train_split_rat
     print("Classifier features generated")
     return train_set, test_set
 
-def predict(clusters_count, seg_size, train_split_ratio = 0.8, has_plot_histograms = False):
+def predict(clusters_count, seg_size, train_split_ratio = 0.67, has_plot_histograms = False):
     print("Number Clusters= {} and segment length = {}".format(clusters_count, seg_size))
     feature_vector = segment_feature_data(seg_size, train_split_ratio)
     train_classifier, test_classifier = construct_features(feature_vector, clusters_count, seg_size
@@ -156,7 +157,7 @@ data_path = "HMP_Dataset/"
 n_centroids = 480
 segment_length = 32
 
-predict(n_centroids, segment_length, 0.8)
+predict(n_centroids, segment_length, 0.67)
 
 ####################################################################################################################
 # Best accuracy
@@ -165,7 +166,7 @@ predict(n_centroids, segment_length, 0.8)
 n_centroids = 25
 segment_length = 4
 
-predict(n_centroids, segment_length, 0.8, True)
+predict(n_centroids, segment_length, 0.67, True)
 
 ####################################################################################################################
 # Experiments for various segment length and number of clusters
@@ -178,7 +179,7 @@ result = []
 for seg_length in seg_lengths:
     interim = []
     for clusters in clusters_no:
-        acc = predict(clusters, seg_length, 0.8)
+        acc = predict(clusters, seg_length, 0.67)
         interim.append(acc*100)
     result.append(interim)
 
