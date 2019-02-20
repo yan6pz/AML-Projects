@@ -125,10 +125,10 @@ def split_training_test_set(input_data, folds):
 
 data = []
 for i, _ in enumerate(activity):
-    files = os.listdir("./homework5/HMP_Dataset/"+activity[i])
+    files = os.listdir("HMP_Dataset/"+activity[i])
     for file in files:
         sequence_data = []
-        fobj = open("./homework5/HMP_Dataset/"+activity[i]+"/"+file, "r")
+        fobj = open("HMP_Dataset/"+activity[i]+"/"+file, "r")
         for line in fobj:
             fields = line.split()
             sequence_data.append(fields)
@@ -137,7 +137,7 @@ data = np.array(data)
 
 piece_length = 32 # 32hz per second, so we take just 1 second of data into a piece.
 step_length = 10
-k_cluster = 4
+k_cluster = 25
 
 kmeans = vector_quantize_build_dictionary(data,piece_length, step_length, k_cluster)
 
@@ -146,3 +146,5 @@ vectorized_data = quantize_all_data(data, piece_length, step_length, kmeans)
 train_st, test_st = split_training_test_set(vectorized_data,3)
 
 accuracy = train_and_validate_randomforest(train_st[:,:-1], train_st[:,-1], test_st[:,:-1], test_st[:,-1], 30, 16)
+
+print(accuracy)

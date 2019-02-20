@@ -163,8 +163,8 @@ predict(n_centroids, segment_length, 0.67)
 # Best accuracy
 ####################################################################################################################
 
-n_centroids = 25
-segment_length = 4
+n_centroids = 100
+segment_length = 48
 
 predict(n_centroids, segment_length, 0.67, True)
 
