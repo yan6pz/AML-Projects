@@ -2,7 +2,7 @@ library(MASS)
 
 #setwd("~/Desktop/AML/AML-Projects/homework6")
 names <- c("crim","zn","indus","chas","nox","rm","age","dis","rad","tax","ptratio","black","lstat","medv")
-data <- read.table("./homework6/housing.data", header=F, col.names = names)
+data <- read.table("housing.data", header=F, col.names = names)
 
 summary(data)
 head(data)
@@ -13,13 +13,13 @@ estimateStatistics <- function(regression_model){
   print("R-squared: ")
   print(rsq)
   #2 Estimate residuals
-  residuals <- residuals(regression_model)
+  residuals <- rstandard(regression_model)
   print("Residuals: ")
-  print(residuals)
+  print(head(sort(residuals, decreasing=TRUE),5))
   #3 Estimate the hat matrix leverage
   leverage <- hatvalues(regression_model)
   print("Leverage: ")
-  print(leverage)
+  print(head(sort(leverage, decreasing=TRUE),5))
   #4 Estimate cook distance
   # identify D values > 4/(n-k-1)
   cutoff <- 4/((nrow(data)-length(regression_model$coefficients)-2))
@@ -40,7 +40,7 @@ plot_summarize <- function(regression_model){
 }
 
 regress <- function(data){
-  multi_lr=lm(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat,data)
+  multi_lr=lm(medv~. - medv,data)
   estimateStatistics(multi_lr)
 
   #resulting model
@@ -64,18 +64,19 @@ data_without_6_outliers <- data[-c(366, 368, 370,365, 369, 373), ]
 regress(data_without_6_outliers)
 
 #remove top 10 influential points
-data_without_10_outliers <- data[-c(366, 368, 370,365, 369, 373,372,371,381,413), ]
+data_without_10_outliers <- data[-c(365, 366, 368, 369, 370, 371, 372, 373, 375, 413),]
 
 model_cleaned <- regress(data_without_10_outliers)
 
 #Box-Cox transformation choosing lambda
-bc<-boxcox(model_cleaned,lambda=seq(0,1,by=.1))
+bc<-boxcox(model_cleaned)
 best_lambda <- bc$x[which.max(bc$y)]
 print("Best Lambda: ")
 print(best_lambda)
 
 #transform the model based on box-cox's lambda
-transformed_model <- lm(((medv^best_lambda-1)/best_lambda) ~ crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat,data_without_10_outliers)
+transformed_model <- lm(((medv^best_lambda-1)/best_lambda) ~ . - medv,data_without_10_outliers)
+estimateStatistics(transformed_model)
 
 #Standardized Residuals vs the Fitted values
 st_residuals <- rstandard(transformed_model)
