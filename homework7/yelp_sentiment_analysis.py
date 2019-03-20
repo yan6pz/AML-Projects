@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-
 from string import punctuation
 from operator import itemgetter
 
@@ -59,9 +58,14 @@ def max_min_document_frequency(data):
 
 
 
-def plot_histograms(data):
-    plt.hist(data['text length'], bins=50)
-    plt.ylabel('Number of words')
+def plot_histograms(predictions, threshold):
+    kwargs = dict(histtype='stepfilled', alpha=0.3, density=True, bins=50)
+    plt.hist(predictions[predictions[:,0] >= threshold], **kwargs)
+    plt.hist(predictions[predictions[:,0] < threshold], **kwargs)
+    plt.ylabel('Count of predictions in bucket')
+    plt.xlabel('Predicted Score')
+    plt.title("Histogram of Predicted Scores")
+    plt.savefig('hist_predicted_scores')
     plt.show()
 
 def truncate(content, length=200, suffix='...'):
@@ -165,19 +169,21 @@ plot_word_distribution(distances[0], "cosine_distances")
 
 
 #split into train and test sets. Fit Log Reg model
-X_train, X_test, y_train, y_test = train_test_split(training_set, y, test_size=0.1, random_state=1)
+X_train, X_test, y_train, y_test = train_test_split(training_set, y, test_size=0.1)
 log_regression = LogisticRegression(random_state=0, solver='liblinear',
                          multi_class='ovr').fit(X_train, y_train)  #liblinear for small binary problems
 
 #predit and get accuracy
 predictions = log_regression.predict(X_test)
 print(confusion_matrix(y_test, predictions))
-print('\n')
 print(classification_report(y_test, predictions)) #reaching 92% accuracy
+
+#Plot a histogram of the scores on the training data xlabel -predicted prob ylabel- count of predictions
+plot_histograms(log_regression.predict_proba(X_train), 0.4)
 
 
 #ROC Curve
-log_roc_auccuracy = roc_auc_score(y_test, log_regression.predict(X_test))
+log_roc_accuracy = roc_auc_score(y_test, log_regression.predict(X_test))
 fpr, tpr, thresholds = roc_curve(y_test.values, log_regression.predict_proba(X_test)[:,1], pos_label=5)
 
-plot_roc_curve(fpr,tpr,log_roc_auccuracy)
+plot_roc_curve(fpr,tpr,log_roc_accuracy)
