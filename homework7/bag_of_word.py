@@ -33,7 +33,7 @@ def vectorize_bagOfWd(X, maxDf=0.42, minDf=2):
     wordRank_swRemoved.sort(key=takeSecond, reverse=True)
     plt.figure()
     plt.scatter(range(len(wordRank_swRemoved)), np.array(wordRank_swRemoved)[:, 1])
-    return bagOfWord_swRemoved, vectorizer_cutoff
+    return bagOfWord_swRemoved, vectorizer_cutoff, stop_word
 
 
 def text_retrieval(vectorizer, query):
@@ -104,7 +104,7 @@ data = np.array(data[1:])
 X = [x.lower() for x in data[:, 5]]
 Y = data[:, 3]
 
-bagOfWord_vectors, vectorizer = vectorize_bagOfWd(X)
+bagOfWord_vectors, vectorizer, stopWords = vectorize_bagOfWd(X, 0.42, 3)
 #the following line get the most frequent #11732 word (which is 'the')
 #list(vectorizer.vocabulary_.keys())[list(vectorizer.vocabulary_.values()).index(11732)]
 text_retrieval(vectorizer, "Horrible customer service")
