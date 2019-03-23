@@ -52,7 +52,7 @@ def max_min_document_frequency(data):
     min_df - ignore terms having document frequency lower than 1%
     max_df - ignore terms having document frequency higher than 80%
     '''
-    vectorizer = CountVectorizer(min_df=0.01, max_df=0.8, stop_words='english')
+    vectorizer = CountVectorizer(min_df=3, max_df=0.42, stop_words='english')
     training_set = vectorizer.fit_transform(data)
     return vectorizer.get_stop_words(), vectorizer, training_set
 
