@@ -6,6 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
+from sklearn.metrics import confusion_matrix
 
 
 def takeSecond(elem):
@@ -95,7 +96,7 @@ def plot_roc(fpr, tpr, roc_auc):
 
 
 data = []
-with open("./homework7/yelp_2k.csv") as f:
+with open("./yelp_2k.csv") as f:
     reader=csv.reader(f,delimiter=',')
     for row in reader:
         data.append(row)
@@ -126,6 +127,7 @@ train_accuracy = sum(train_predicted_thres_updated == y_train) / len(y_train)
 print("Training accuracy with threshold changed: ", train_accuracy*100, "%")
 
 test_predicted_thres_updated = predict_new_threshold(logistic_clf, X_test, 0.63)
+print(confusion_matrix(y_test, test_predicted_thres_updated))
 test_accuracy = sum(test_predicted_thres_updated == y_test) / len(y_test)
 print("Test accuracy with threshold changed: ", test_accuracy*100, "%")
 
